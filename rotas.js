@@ -1,70 +1,108 @@
 const express = require('express');
 const router = express.Router();
+const Professor = require('./professorModel');
 
 // GET Todos os professores
-router.get('/professores', (req, res) => {
-    let dados = {};
-    let dados2 = {};
-    let dadosLista = [];
-
-    dados.nome = "Teste 1";
-    dados.matricola = "001";
-    dados.data_de_nascimento = "01/01/1980";
-
-    dados2.nome = "Teste 2";
-    dados2.matricola = "002";
-    dados2.data_de_nascimento = "01/01/1980";
-
-    dadosLista.push(dados,dados2);"|"
-
-    res.send(JSON.stringify(dadosLista));
+router.get('/professores', async (req, res) => {
+    try {
+        let professores = await Professor.find({});
+        res.json(professores);
+    } catch (err) {
+        console.log("Erro ao buscar professor:", err);
+        res.status(500).send(`Ocorreu um erro na busca: ${err}`);
+    }
 });
 
 // GET professor por matricola
-router.get('/professor/:matricula', (req, res) => {
-    const matricula = req.params.matricula;
-    let dados = {};
+router.get('/professor/:matricula', async (req, res) => {
+    let matricula = req.params.matricula;
 
-    dados.nome = "Teste 1";
-    dados.matricola = "001";
-    dados.data_de_nascimento = "01/01/1980";
-
-    res.send(JSON.stringify(dados));
+    try {
+        let professor = await Professor.findOne({ matricula: matricula });
+        if (professor) {
+            res.json(professor);
+        } else {
+            res.status(404).send({ message: "Professor não encontrado" });
+        }
+    } catch (err) {
+        console.log("Erro ao buscar professor:", err);
+        res.status(500).send(`Ocorreu um erro na busca: ${err}`);
+    }
 });
 
 
 // POST Adicionar professor
-router.post('/professor/', (req, res) => {
-    const dados = req.body;
+router.post('/professor/', async (req, res) => {
 
-    let retorno = {};
-    retorno.status = 'Professor inserido com Sucesso!'
+    let professorInsert = new Professor({
+        nome: req.body.nome,
+        matricula: req.body.matricula,
+        data_de_nascimento: req.body.data_de_nascimento
+    });
 
-    res.send(JSON.stringify(retorno));
+    try {
+
+        let professor = await Professor.findOne({ matricula: req.body.matricula });
+        if (professor) {
+            res.status(500).json({ status: 'Erro ao inserir professor', mensagem: 'Nao e possivel inserir um professor com matricola repetida'})
+        } else{
+
+            await professorInsert.save();
+            res.json({ status: 'Professor inserido com sucesso!' });
+
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ status: 'Erro ao inserir professor', mensagem: err });
+    }
 });
 
 // PATCH alterar professor por matricola
-router.patch('/professor/:matricula', (req, res) => {
+router.patch('/professor/:matricula', async (req, res) => {
     const dados = req.body;
-    const matricula = req.params.matricula;
+    let matricula = req.params.matricula;
 
-    let retorno = {};
-    retorno.status = 'Professor alterado com Sucesso!'
+    let professorUpdate = new Professor({
+        nome: req.body.nome,
+        data_de_nascimento: req.body.data_de_nascimento
+    });
 
-    res.send(JSON.stringify(retorno));
+    try {
+
+        let update = await Professor.findOneAndUpdate(
+            { matricula: matricula },
+            { $set: updateData }
+        );
+        if (update) {
+            res.json({ status: 'Professor alterado com Sucesso!' });
+        } else {
+            res.status(404).send({ message: "Professor não encontrado" });
+
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ status: 'Erro ao alterar professor', mensagem: err });
+    }
 });
 
-router.delete('/professor/:matricula', (req, res) => {
-
-    const dados = req.body;
+router.delete('/professor/:matricula', async (req, res) => {
     const matricula = req.params.matricula;
 
-    console.log(matricula);
+    try {
 
-    let retorno = {};
-    retorno.status = 'Professor excluído com Sucesso!'
+        let del = await Professor.findOneAndDelete(
+            { matricula: matricula }
+        );
+        if (del) {
+            res.json({ status: 'Professor excluído com Sucesso!' });
+        } else {
+            res.status(404).send({ message: "Professor não encontrado" });
 
-    res.send(JSON.stringify(retorno));
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ status: 'Erro ao excluir professor', mensagem: err });
+    }
 });
 
 module.exports = router;
