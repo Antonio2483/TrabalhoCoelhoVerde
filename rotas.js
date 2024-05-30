@@ -60,18 +60,17 @@ router.post('/professor/', async (req, res) => {
 // PATCH alterar professor por matricola
 router.patch('/professor/:matricula', async (req, res) => {
     const dados = req.body;
-    let matricula = req.params.matricula;
+    let matriculaUpdate = req.params.matricula;
 
-    let professorUpdate = new Professor({
-        nome: req.body.nome,
-        data_de_nascimento: req.body.data_de_nascimento
-    });
+    delete dados.matricula;
+
+    console.log("UPDATE: ", dados);
 
     try {
 
         let update = await Professor.findOneAndUpdate(
-            { matricula: matricula },
-            { $set: updateData }
+            { matricula: matriculaUpdate },
+            { $set: dados }
         );
         if (update) {
             res.json({ status: 'Professor alterado com Sucesso!' });
